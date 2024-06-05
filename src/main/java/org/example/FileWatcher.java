@@ -1,33 +1,34 @@
 package org.example;
 
-import java.nio.file.*;
 import java.io.IOException;
+import java.nio.file.*;
+import static java.nio.file.StandardWatchEventKinds.*;
 
 public class FileWatcher {
+    private WatchService watchService;
+    private Path pathToWatch;
 
-    private Path folderPath;
-    private Path processedFolderPath;
-
-    public FileWatcher(String folderPath, String processedFolderPath) {
-        this.folderPath = Paths.get(folderPath);
-        this.processedFolderPath = Paths.get(processedFolderPath);
+    public FileWatcher(String pathToWatch) throws IOException {
+        this.watchService = FileSystems.getDefault().newWatchService();
+        this.pathToWatch = Paths.get(pathToWatch);
+        this.pathToWatch.register(watchService, ENTRY_CREATE);
     }
 
-    public void watchFolder() throws IOException, InterruptedException {
-        WatchService watchService = FileSystems.getDefault().newWatchService();
-        folderPath.register(watchService, StandardWatchEventKinds.ENTRY_CREATE);
-
-        while (true) {
-            WatchKey key = watchService.take();
+    public void watch() throws IOException, InterruptedException {
+        WatchKey key;
+        while ((key = watchService.take()) != null) {
             for (WatchEvent<?> event : key.pollEvents()) {
-                if (event.kind() == StandardWatchEventKinds.ENTRY_CREATE) {
-                    Path filePath = folderPath.resolve((Path) event.context());
-                    if (filePath.toString().matches("users_\\d{14}\\.csv")) {
-                        BatchProcessor.processFile(filePath.toString(), processedFolderPath.toString());
-                    }
+                if (event.kind() == ENTRY_CREATE) {
+                    Path createdPath = ((WatchEvent<Path>) event).context();
+                    System.out.println("File created: " + createdPath);
+                    // Trigger batch processing or other actions here
                 }
             }
             key.reset();
         }
+    }
+
+    public void close() throws IOException {
+        watchService.close();
     }
 }
