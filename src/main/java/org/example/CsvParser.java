@@ -21,7 +21,6 @@ public class CsvParser {
                 }
             }
         }
-        // Retourne la liste des enregistrements
         return records;
     }
 }

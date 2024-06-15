@@ -11,28 +11,24 @@ public class BatchProcessor {
 
     // Méthode pour traiter les fichiers du dossier d'entrée
     public static void processFiles(String inputFolder, String processedFolder, String dbUrl, String dbUser, String dbPass) throws Exception {
-        // Connexion à la base de données PostgreSQL
+        // Connexion à la base de données PostgreSQL avec les paramètres fournis
         Connection conn = DriverManager.getConnection(dbUrl, dbUser, dbPass);
 
         // Liste les fichiers dans le dossier d'entrée
         Files.list(Paths.get(inputFolder))
-                // Filtre les fichiers réguliers
+                // Filtre les fichiers réguliers (fichiers normaux avec des données dedans) et ceux qui correspondent au format "users_<YYYYMMDDHHmmSS>.csv"
                 .filter(Files::isRegularFile)
-                // Filtre les fichiers qui correspondent au format "users_<YYYYMMDDHHmmSS>.csv"
                 .filter(path -> path.toString().matches(".*users_\\d{14}\\.csv"))
-                // Pour chaque fichier correspondant, traiter le fichier et le déplacer dans le dossier traité
+                // Pour chaque fichier correspondant, on traite le fichier et on déplace dans le dossier traité (processed)
                 .forEach(path -> {
                     try {
-                        // Appel de la méthode processFile pour traiter le fichier
                         processFile(path, conn);
-                        // Déplace le fichier traité vers le dossier des fichiers traités
                         Files.move(path, Paths.get(processedFolder, path.getFileName().toString()), StandardCopyOption.REPLACE_EXISTING);
                     } catch (Exception e) {
-                        // Affiche la pile d'erreurs en cas d'exception
                         e.printStackTrace();
                     }
                 });
-        // Ferme la connexion à la base de données
+        // On ferme la connexion à la base de données
         conn.close();
     }
 
